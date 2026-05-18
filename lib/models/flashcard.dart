@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 class Flashcard {
   final String id;
   final String question;

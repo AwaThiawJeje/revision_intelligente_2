@@ -41,13 +41,16 @@ class _StudySetupScreenState extends State<StudySetupScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Cartes disponibles : $max',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 14)),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
+                    fontSize: 14)),
             const SizedBox(height: 24),
             const Text('Nombre de questions',
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 16),
-            // Boutons rapides
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -67,12 +70,18 @@ class _StudySetupScreenState extends State<StudySetupScreen> {
                     decoration: BoxDecoration(
                       color: selected
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.2),
                       ),
                     ),
                     child: Center(
@@ -81,9 +90,14 @@ class _StudySetupScreenState extends State<StudySetupScreen> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: available 
-                            ? (selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface)
-                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                          color: available
+                              ? (selected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context).colorScheme.onSurface)
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.3),
                         ),
                       ),
                     ),
@@ -92,7 +106,6 @@ class _StudySetupScreenState extends State<StudySetupScreen> {
               }).toList(),
             ),
             const SizedBox(height: 12),
-            // Toutes les cartes
             GestureDetector(
               onTap: () => setState(() {
                 _selectedCount = max;
@@ -104,12 +117,18 @@ class _StudySetupScreenState extends State<StudySetupScreen> {
                 decoration: BoxDecoration(
                   color: !_useCustom && _selectedCount == max
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: !_useCustom && _selectedCount == max
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.2),
                   ),
                 ),
                 child: Center(
@@ -122,7 +141,6 @@ class _StudySetupScreenState extends State<StudySetupScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            // Nombre personnalisé
             Row(
               children: [
                 Checkbox(
@@ -147,11 +165,14 @@ class _StudySetupScreenState extends State<StudySetupScreen> {
                 const SizedBox(width: 8),
                 Text('/ $max max',
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
+                        fontSize: 13)),
               ],
             ),
             const Spacer(),
-            // Bouton démarrer
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
@@ -209,8 +230,14 @@ class _StudyScreenState extends State<StudyScreen>
   bool _sessionDone = false;
   DateTime _startTime = DateTime.now();
 
+  bool _showFeedback = false;
+  bool _lastAnswerCorrect = false;
+
   late AnimationController _flipController;
   late Animation<double> _flipAnimation;
+
+  late AnimationController _feedbackController;
+  late Animation<double> _feedbackAnimation;
 
   @override
   void initState() {
@@ -223,6 +250,14 @@ class _StudyScreenState extends State<StudyScreen>
     );
     _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _flipController, curve: Curves.easeInOut),
+    );
+
+    _feedbackController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _feedbackAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _feedbackController, curve: Curves.elasticOut),
     );
   }
 
@@ -239,6 +274,7 @@ class _StudyScreenState extends State<StudyScreen>
   @override
   void dispose() {
     _flipController.dispose();
+    _feedbackController.dispose();
     super.dispose();
   }
 
@@ -252,22 +288,31 @@ class _StudyScreenState extends State<StudyScreen>
   }
 
   void _answer(bool correct) {
+    if (_showFeedback) return;
+
     final state = context.read<AppState>();
     state.recordAnswer(_deck[_currentIndex].id, correct);
 
     setState(() {
       if (correct) _correct++;
       else _incorrect++;
+      _showFeedback = true;
+      _lastAnswerCorrect = correct;
     });
 
-    Future.delayed(const Duration(milliseconds: 200), () {
+    _feedbackController.forward(from: 0);
+
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
       if (_currentIndex + 1 >= _deck.length) {
         _endSession();
       } else {
         _flipController.reset();
+        _feedbackController.reset();
         setState(() {
           _currentIndex++;
           _isFlipped = false;
+          _showFeedback = false;
         });
       }
     });
@@ -308,13 +353,17 @@ class _StudyScreenState extends State<StudyScreen>
       ),
       body: Column(
         children: [
+          // ── Barre de progression ────────────────────────────────────
           LinearProgressIndicator(
             value: progress,
             minHeight: 4,
-            backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-            valueColor:
-                AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+            backgroundColor:
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary),
           ),
+
+          // ── Score + catégorie ───────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Row(
@@ -326,7 +375,11 @@ class _StudyScreenState extends State<StudyScreen>
                     color: const Color(0xFF4CAF50)),
                 Text(card.category,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
+                        fontSize: 13)),
                 _ScorePill(
                     count: _incorrect,
                     label: 'Incorrect',
@@ -334,11 +387,13 @@ class _StudyScreenState extends State<StudyScreen>
               ],
             ),
           ),
+
+          // ── Carte ──────────────────────────────────────────────────
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: GestureDetector(
-                onTap: _flip,
+                onTap: !_showFeedback ? _flip : null,
                 child: AnimatedBuilder(
                   animation: _flipAnimation,
                   builder: (context, child) {
@@ -353,17 +408,16 @@ class _StudyScreenState extends State<StudyScreen>
                           ? Transform(
                               alignment: Alignment.center,
                               transform: Matrix4.identity()..rotateY(pi),
-                              child: _CardFace(
+                              child: _buildCardWithFeedback(
                                 text: card.answer,
                                 label: 'RÉPONSE',
-                                color: Colors.white,
-                                accent: Theme.of(context).colorScheme.secondary,
+                                accent:
+                                    Theme.of(context).colorScheme.secondary,
                               ),
                             )
-                          : _CardFace(
+                          : _buildCardWithFeedback(
                               text: card.question,
                               label: 'QUESTION',
-                              color: Colors.white,
                               accent: Theme.of(context).colorScheme.primary,
                             ),
                     );
@@ -372,54 +426,141 @@ class _StudyScreenState extends State<StudyScreen>
               ),
             ),
           ),
+
+          // ── Hint ───────────────────────────────────────────────────
           if (!_isFlipped)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text('Appuyez sur la carte pour voir la réponse',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 13)),
-            ),
-          if (_isFlipped)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                        foregroundColor: Theme.of(context).colorScheme.onError,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () => _answer(false),
-                      icon: const Icon(Icons.close),
-                      label: const Text('Incorrect'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () => _answer(true),
-                      icon: const Icon(Icons.check),
-                      label: const Text('Correct'),
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Appuyez sur la carte pour voir la réponse',
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.4),
+                    fontSize: 13),
               ),
-            )
-          else
-            const SizedBox(height: 78),
+            ),
+
+          // ── Boutons ronds ✗ / ✓ ────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(
+                top: 16, bottom: 32, left: 24, right: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // ✗ Incorrect
+                _RoundButton(
+                  size: 68,
+                  color: _isFlipped && !_showFeedback
+                      ? const Color(0xFFFFEBEE)
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.06),
+                  borderColor: _isFlipped && !_showFeedback
+                      ? const Color(0xFFF44336)
+                      : Colors.transparent,
+                  onTap: _isFlipped && !_showFeedback
+                      ? () => _answer(false)
+                      : null,
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 30,
+                    color: _isFlipped && !_showFeedback
+                        ? const Color(0xFFF44336)
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.25),
+                  ),
+                ),
+
+                const SizedBox(width: 40),
+
+                // ✓ Correct
+                _RoundButton(
+                  size: 68,
+                  color: _isFlipped && !_showFeedback
+                      ? const Color(0xFFE8F5E9)
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.06),
+                  borderColor: _isFlipped && !_showFeedback
+                      ? const Color(0xFF4CAF50)
+                      : Colors.transparent,
+                  onTap: _isFlipped && !_showFeedback
+                      ? () => _answer(true)
+                      : null,
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 30,
+                    color: _isFlipped && !_showFeedback
+                        ? const Color(0xFF4CAF50)
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.25),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
+  // ── Carte avec overlay feedback ──────────────────────────────────────────
+  Widget _buildCardWithFeedback({
+    required String text,
+    required String label,
+    required Color accent,
+  }) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        _CardFace(
+          text: text,
+          label: label,
+          color: Colors.white,
+          accent: accent,
+        ),
+        if (_showFeedback)
+          ScaleTransition(
+            scale: _feedbackAnimation,
+            child: Transform.rotate(
+              angle: -0.15,
+              child: Text(
+                _lastAnswerCorrect ? 'Got it ✓' : "You'll see it\nnext time ✗",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: _lastAnswerCorrect ? 38 : 26,
+                  fontWeight: FontWeight.bold,
+                  color: _lastAnswerCorrect
+                      ? const Color(0xFF2E7D32)
+                      : const Color(0xFFC62828),
+                  shadows: [
+                    Shadow(
+                      color: (_lastAnswerCorrect
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFFC62828))
+                          .withOpacity(0.15),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ── Écran résultats ──────────────────────────────────────────────────────
   Widget _buildSummary(BuildContext context) {
-    final score = _deck.isEmpty ? 0 : _correct / _deck.length;
+    final score = _deck.isEmpty ? 0.0 : _correct / _deck.length;
     final emoji = score >= 0.8 ? '🎉' : score >= 0.5 ? '👍' : '💪';
     final message = score >= 0.8
         ? 'Excellent travail !'
@@ -429,7 +570,7 @@ class _StudyScreenState extends State<StudyScreen>
 
     return Scaffold(
       appBar: AppBar(title: const Text('Résultats'), centerTitle: true),
-      body: Center(
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
@@ -458,7 +599,6 @@ class _StudyScreenState extends State<StudyScreen>
               _SummaryRow(
                   label: 'Cartes révisées', value: '${_deck.length}'),
               const SizedBox(height: 40),
-              // Rejouer même nombre
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
@@ -473,8 +613,7 @@ class _StudyScreenState extends State<StudyScreen>
                   ),
                 ),
                 icon: const Icon(Icons.replay),
-                label: Text(
-                    'Rejouer (${widget.questionCount} questions)'),
+                label: Text('Rejouer (${widget.questionCount} questions)'),
               ),
               const SizedBox(height: 12),
               Row(
@@ -495,8 +634,12 @@ class _StudyScreenState extends State<StudyScreen>
                   Expanded(
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                          foregroundColor: Theme.of(context).colorScheme.onSurface),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.1),
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onSurface),
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.home),
                       label: const Text('Accueil'),
@@ -512,6 +655,7 @@ class _StudyScreenState extends State<StudyScreen>
   }
 }
 
+// ─── Widgets partagés ─────────────────────────────────────────────────────────
 class _CardFace extends StatelessWidget {
   final String text, label;
   final Color color, accent;
@@ -530,10 +674,10 @@ class _CardFace extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(color: accent.withOpacity(0.5), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: accent.withValues(alpha: 0.15),
+            color: accent.withOpacity(0.15),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -546,7 +690,7 @@ class _CardFace extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.2),
+              color: accent.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(label,
@@ -583,7 +727,7 @@ class _ScorePill extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.2),
+            color: color.withOpacity(0.2),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -596,8 +740,53 @@ class _ScorePill extends StatelessWidget {
         ),
         const SizedBox(width: 6),
         Text(label,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 12)),
       ],
+    );
+  }
+}
+
+class _RoundButton extends StatelessWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final Color color;
+  final Color borderColor;
+  final double size;
+
+  const _RoundButton({
+    required this.child,
+    required this.color,
+    required this.borderColor,
+    required this.size,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: borderColor, width: 2),
+          boxShadow: onTap != null
+              ? [
+                  BoxShadow(
+                    color: borderColor.withOpacity(0.2),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                  )
+                ]
+              : [],
+        ),
+        child: Center(child: child),
+      ),
     );
   }
 }
@@ -613,7 +802,10 @@ class _SummaryRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8), fontSize: 16)),
+            style: TextStyle(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                fontSize: 16)),
         Text(value,
             style: TextStyle(
                 color: color ?? Theme.of(context).colorScheme.onSurface,
