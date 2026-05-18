@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class SessionResult {
   final String id;
   final DateTime date;
