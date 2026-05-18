@@ -6,6 +6,7 @@ import 'study_screen.dart';
 import 'generate_cards_screen.dart';
 import 'history_screen.dart';
 import 'add_card_screen.dart';
+import 'import_pdf_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -71,6 +72,12 @@ class _HomeTab extends StatelessWidget {
             tooltip: 'Ajouter une carte',
             onPressed: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const AddCardScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Importer un PDF',
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ImportPdfScreen())),
           ),
         ],
       ),
@@ -174,11 +181,14 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(value,
                 style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
+                    fontSize: 22, fontWeight: FontWeight.bold, color: color)),
             Text(label,
-                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6))),
           ],
         ),
       ),
@@ -204,7 +214,8 @@ class _StartStudyCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              Icon(Icons.play_circle_fill, size: 48, color: Theme.of(context).colorScheme.onPrimary),
+              Icon(Icons.play_circle_fill,
+                  size: 48, color: Theme.of(context).colorScheme.onPrimary),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -220,12 +231,17 @@ class _StartStudyCard extends StatelessWidget {
                           ? 'Ajoutez des cartes pour commencer'
                           : '${state.totalCards} cartes disponibles',
                       style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8), fontSize: 13),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withOpacity(0.8),
+                          fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onPrimary),
+              Icon(Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onPrimary),
             ],
           ),
         ),
@@ -243,8 +259,7 @@ class _CardTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Text(card.question,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -254,20 +269,23 @@ class _CardTile extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: card.difficultyColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(card.difficultyLabel,
-                    style: TextStyle(
-                        fontSize: 11, color: card.difficultyColor)),
+                    style:
+                        TextStyle(fontSize: 11, color: card.difficultyColor)),
               ),
               const SizedBox(width: 8),
               Text(card.category,
                   style: TextStyle(
-                      fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                      fontSize: 11,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6))),
             ],
           ),
         ),

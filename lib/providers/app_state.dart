@@ -92,6 +92,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addCards(List<Flashcard> cards) async {
+    await _db.insertFlashcards(cards);
+    _cards = await _db.getAllFlashcards();
+    notifyListeners();
+  }
+
   Future<void> generateCards(int count, String category) async {
     final templates = _getTemplates(category);
     final newCards = <Flashcard>[];
